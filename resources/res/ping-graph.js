@@ -1,10 +1,12 @@
 //
-// Initialize Charting
+// ping-graph.js
+// Using web-sockets to draw ping graphs!
 //
 
+// Initialize main chart
 function initCharting() {
 
-	var ctx = document.getElementById("chart-realtime").getContext('2d');
+	var ctx = document.getElementById("chart-wsping").getContext('2d');
 
 	var chartConfig = {
 		datasets : [ {
@@ -17,10 +19,9 @@ function initCharting() {
 			borderJoinStyle : 'miter',
 			pointBorderColor : "rgba(75,192,192,1)",
 			pointBackgroundColor : "#fff",
-			pointBorderWidth : 1,
-			pointRadius : 1,
-			pointHitRadius : 10,
-			spanGaps : false,
+			pointBorderWidth : 0,
+			pointRadius : 0,
+			pointHitRadius : 10
 		} ]
 	};
 
@@ -31,7 +32,7 @@ function initCharting() {
 			yAxes : [ {
 				ticks : {
 					beginAtZero : true,
-					suggestedMax : 25,
+					suggestedMax : 20,
 					autoSkip : true,
 					maxTicksLimit : 20,
 					fontSize : 16,
@@ -41,10 +42,12 @@ function initCharting() {
 				}
 			} ],
 			xAxes : [ {
+				type : 'realtime',
+				realtime : {
+					duration : 60000
+				},
 				ticks : {
-					autoSkip : true,
-					maxTicksLimit : 20,
-					fontSize : 18
+					fontSize : 16
 				}
 			} ]
 		},
@@ -77,11 +80,6 @@ var t0 = 0;
 var pingTask;
 var samples = 10;
 
-document.wsping = {
-	time : [],
-	data : []
-};
-
 document.wstime = {
 	now : 0,
 	min : 1000,
@@ -111,6 +109,10 @@ function connect() {
 	var host = window.location.host;
 	var uri = "ws://" + host + "/ping/";
 	ws = new WebSocket(uri);
+}
+
+ws.onopen = function() {
+	ping();
 }
 
 ws.onmessage = function(data) {
@@ -152,7 +154,7 @@ function pong() {
 	// keep last 10 in a buffer
 	document.wstime.lst.push(ping);
 	if (document.wstime.lst.length > 10) {
-		document.wstime.lst.pop();
+		document.wstime.lst.shift();
 	}
 
 	// calculate the average
@@ -163,12 +165,14 @@ function pong() {
 	document.wstime.avg = (avg / samples);
 
 	// push to data array
-	document.wsping.time.push(t1);
-	document.wsping.data.push(ping);
+	document.chart.config.data.datasets[0].data.push({
+		x : Date.now(),
+		y : ping
+	});
+	document.chart.update();
 
 	// update ui elements
 	updateUI();
-	updateGraph();
 }
 
 function updateUI() {
@@ -182,29 +186,14 @@ function updateUI() {
 	// document.getElementById("wsjitt").innerHTML = document.wstime.now;
 }
 
-function updateGraph() {
-
-	var time = document.wsping.time;
-	var data = document.wsping.data;
-
-	var labels = [];
-	for (x = 0; x < time.length; x++) {
-
-		labels.push(getTimeStamp(time[x]));
-	}
-
-	document.chart.data.labels = labels;
-	document.chart.data.datasets[0].data = data;
-	document.chart.update();
-}
-
 function clearData() {
-	
+	document.chart.config.data.datasets[0].data = [];
+	document.chart.update();
 }
 
 function exportData() {
 
-	const jsonStr = JSON.stringify(document.wsping);
+	const jsonStr = JSON.stringify(document.chart.config.data.datasets[0].data);
 
 	let element = document.createElement('a');
 	element.setAttribute('href', 'data:text/plain;charset=utf-8,'

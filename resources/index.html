@@ -14,7 +14,11 @@
 
 <link rel="icon" type="image/png" href="/favicon.png" />
 
-<script src="/res/Chart.bundle.min.js"></script>
+<script src="/res/moment.min.js"></script>
+<script src="/res/Chart.min.js"></script>
+<script src="/res/chartjs-plugin-streaming.min.js"></script>
+
+
 <script src="/res/utils.js"></script>
 <script src="/res/ping-graph.js"></script>
 
@@ -52,7 +56,7 @@
 
 		<!--  Graph -->
 		<div id="graph">
-			<canvas id="chart-realtime"></canvas>
+			<canvas id="chart-wsping"></canvas>
 		</div>
 
 		<!-- Options -->
@@ -62,6 +66,8 @@
 				<tr>
 					<td><label for="interval">Interval:</label> <select
 						id="interval" onchange="updateInterval();">
+							<option value="100">.1s</option>
+							<option value="500">.5s</option>
 							<option value="1000">1s</option>
 							<option value="2500" selected>2.5s</option>
 							<option value="5000">5s</option>
