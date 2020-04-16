@@ -1,21 +1,86 @@
 <html>
 <head>
+<title>Ping Graph</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta charset="UTF-8">
 <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+
+<meta name="keywords" content="ping, graph, ping test">
+<meta name="description"
+	content="Ping stability testing in your web browser.">
+<meta name="author" content="MClarkDev.com">
+
+<link rel="icon" type="image/png" href="/favicon.png" />
+
 <script src="/res/Chart.bundle.min.js"></script>
 <script src="/res/utils.js"></script>
-<script src="/res/main.js"></script>
-<script src="/res/charting.js"></script>
+<script src="/res/ping-graph.js"></script>
+
+<link rel="stylesheet" type="text/css" href="/res/index.css" />
 </head>
-<body onload="initCharting();">
+<body onload="init();">
 
-	<!-- Ping -->
-	<div id="ping">
-		Time:&nbsp; <span id="wsping"></span>
-	</div>
+	<div id="wrapper">
 
-	<!--  Graph -->
-	<div id="graph">
-		<canvas id="chart-realtime" width="1024" height="350"></canvas>
+		<!--  Header -->
+		<div id="header">
+			<span id="title">Ping Graph</span>
+		</div>
+
+		<!--  About -->
+		<div id="about">Some awesome and useful information.</div>
+
+		<!-- Details Bar -->
+		<div id="details">
+
+			<table class="details">
+				<tr>
+					<td>Ping:&nbsp;<span id="wsping"></span></td>
+
+					<td>Avg:&nbsp;<span id="wsavg"></span></td>
+
+					<td>Min:&nbsp;<span id="wsmin"></span></td>
+
+					<td>Max:&nbsp;<span id="wsmax"></span></td>
+
+					<td>Jitter:&nbsp;<span id="wsjitt"></span></td>
+				</tr>
+			</table>
+		</div>
+
+		<!--  Graph -->
+		<div id="graph">
+			<canvas id="chart-realtime"></canvas>
+		</div>
+
+		<!-- Options -->
+		<div id="options">
+
+			<table class="options">
+				<tr>
+					<td><label for="interval">Interval:</label> <select
+						id="interval" onchange="updateInterval();">
+							<option value="1000">1s</option>
+							<option value="2500" selected>2.5s</option>
+							<option value="5000">5s</option>
+							<option value="10000">10s</option>
+							<option value="15000">15s</option>
+							<option value="30000">30s</option>
+							<option value="60000">60s</option>
+					</select></td>
+
+					<td>
+						<button onclick="clearData();">Clear</button>
+					</td>
+
+					<td>
+						<button onclick="exportData();">Export</button>
+					</td>
+				</tr>
+			</table>
+		</div>
 	</div>
 </body>
 </html>

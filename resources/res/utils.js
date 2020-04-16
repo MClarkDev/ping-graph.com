@@ -46,3 +46,16 @@ function reduce(arr, skip) {
 	}
 	return res;
 }
+
+function skip(arr, skip) {
+
+	var res = [];
+	for (x = 0; x < arr.length; x++) {
+		if (x % skip == 0) {
+			res[x] = arr[x];
+		} else {
+			res[x] = "";
+		}
+	}
+	return res;
+}

@@ -1,0 +1,45 @@
+#wrapper {
+	width: 100%;
+	height: 100%;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	min-width: 300px;
+}
+
+#header {
+	width: auto;
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 26px;
+}
+
+#about {
+	
+}
+
+#graph {
+	margin-left: auto;
+	margin-right: auto;
+	min-width: 300px;
+	max-width: 800px;
+	max-height: 500px;
+}
+
+#details {
+	
+}
+
+table {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.details td {
+	width: 125px;
+}
+
+.options td {
+	width: 250px;
+}
