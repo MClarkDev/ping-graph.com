@@ -8,8 +8,9 @@ function initCharting() {
 
 	var ctx = document.getElementById("chart-wsping").getContext('2d');
 
-	var chartConfig = {
+	var chartData = {
 		datasets : [ {
+			label : "Ping",
 			fill : true,
 			lineTension : 0.1,
 			backgroundColor : "rgba(75,192,192,0.4)",
@@ -21,11 +22,27 @@ function initCharting() {
 			pointBackgroundColor : "#fff",
 			pointBorderWidth : 0,
 			pointRadius : 0,
-			pointHitRadius : 10
+			pointHitRadius : 10,
+			data : []
+		}, {
+			label : "Avg",
+			fill : false,
+			lineTension : 0,
+			backgroundColor : "rgba(75,30,30,0.4)",
+			borderColor : "rgba(75,20,20,.75)",
+			borderCapStyle : 'butt',
+			borderDashOffset : 0.0,
+			borderJoinStyle : 'miter',
+			pointBorderColor : "rgba(75,192,192,1)",
+			pointBackgroundColor : "#fff",
+			pointBorderWidth : 0,
+			pointRadius : 0,
+			pointHitRadius : 5,
+			data : []
 		} ]
 	};
 
-	options = {
+	var chartOptions = {
 		responsive : true,
 		maintainAspectRatio : true,
 		scales : {
@@ -44,7 +61,7 @@ function initCharting() {
 			xAxes : [ {
 				type : 'realtime',
 				realtime : {
-					duration : 60000
+					duration : 15000
 				},
 				ticks : {
 					fontSize : 16
@@ -52,21 +69,39 @@ function initCharting() {
 			} ]
 		},
 		title : {
-			display : false,
+			display : false
 		},
 		legend : {
 			display : false
 		},
 		tooltips : {
+			mode : 'index',
+			intersect : false,
 			titleFontSize : 25,
 			bodyFontSize : 20
+		},
+		hover : {
+			mode : 'nearest',
+			intersect : false
+		},
+		plugins : {
+			streaming : {
+				frameRate : 30
+			}
 		}
 	};
 
 	document.chart = new Chart(ctx, {
 		type : "line",
-		data : chartConfig,
-		options : options
+		data : chartData,
+		options : chartOptions
+	});
+}
+
+function updateChart() {
+
+	document.chart.update({
+		preservation : true
 	});
 }
 
@@ -78,34 +113,35 @@ var ws;
 var reconnect = true;
 var t0 = 0;
 var pingTask;
-var samples = 10;
-
-document.wstime = {
-	now : 0,
-	min : 1000,
-	max : 0,
-	avg : 0,
-	lst : []
-};
+document.wstime = {};
 
 connect();
 
 function init() {
 
 	initCharting();
+
+	clearData();
 	updateInterval();
+}
+
+function getInterval() {
+
+	return document.getElementById("interval").value;
 }
 
 function updateInterval() {
 
-	var interval = document.getElementById("interval").value;
+	document.chart.options.scales.xAxes[0].realtime.delay = getInterval();
+	updateChart();
 
 	clearInterval(pingTask);
 
-	pingTask = setInterval(ping, interval);
+	pingTask = setInterval(ping, getInterval());
 }
 
 function connect() {
+
 	var host = window.location.host;
 	var uri = "ws://" + host + "/ping/";
 	ws = new WebSocket(uri);
@@ -151,28 +187,49 @@ function pong() {
 		document.wstime.max = ping;
 	}
 
-	// keep last 10 in a buffer
-	document.wstime.lst.push(ping);
-	if (document.wstime.lst.length > 10) {
-		document.wstime.lst.shift();
-	}
-
-	// calculate the average
-	var avg = 0;
-	for (var x = 0; x < samples; x++) {
-		avg += document.wstime.lst[x];
-	}
-	document.wstime.avg = (avg / samples);
-
-	// push to data array
+	// push ping to data array
 	document.chart.config.data.datasets[0].data.push({
-		x : Date.now(),
+		x : t1,
 		y : ping
 	});
-	document.chart.update();
+
+	// calculate the average over 10s
+	var avg = 0;
+	var numSamples = 10000 / getInterval();
+	var numAvail = document.chart.config.data.datasets[0].data.length;
+	if (numAvail < numSamples) {
+		numSamples = numAvail;
+	}
+	for (var i = (numAvail - 1); i >= (numAvail - numSamples); i--) {
+		avg += document.chart.config.data.datasets[0].data[i].y;
+	}
+	avg /= numSamples;
+	document.wstime.avg = avg;
+
+	// push avg to data array
+	document.chart.config.data.datasets[1].data.push({
+		x : t1,
+		y : avg
+	});
+
+	// render chart
+	updateChart();
 
 	// update ui elements
 	updateUI();
+}
+
+setInterval(updateTimescale, 10000);
+function updateTimescale() {
+
+	var duration = (Date.now() - document.wstime.start);
+	var buff = 15000 - duration;
+	if (buff > 0) {
+		duration += buff;
+	}
+
+	document.chart.options.scales.xAxes[0].realtime.duration = duration;
+	updateChart();
 }
 
 function updateUI() {
@@ -187,13 +244,21 @@ function updateUI() {
 }
 
 function clearData() {
+
+	document.wstime.start = Date.now();
+	document.wstime.now = 0;
+	document.wstime.min = 1000;
+	document.wstime.max = 0;
+	document.wstime.avg = 0;
+
 	document.chart.config.data.datasets[0].data = [];
-	document.chart.update();
+	document.chart.config.data.datasets[1].data = [];
+	updateChart();
 }
 
 function exportData() {
 
-	const jsonStr = JSON.stringify(document.chart.config.data.datasets[0].data);
+	// const jsonStr = JSON.stringify(document.chart.config.data.datasets);
 
 	let element = document.createElement('a');
 	element.setAttribute('href', 'data:text/plain;charset=utf-8,'
