@@ -4,6 +4,23 @@
 //
 
 // Initialize main chart
+var ws;
+var reconnect = true;
+var t0 = 0;
+var pingTask;
+document.wstime = {};
+
+function init() {
+
+	initCharting();
+
+	clearData();
+	connect();
+	updateInterval();
+
+	setInterval(updateTimescale, 10000);
+}
+
 function initCharting() {
 
 	var ctx = document.getElementById("chart-wsping").getContext('2d');
@@ -105,26 +122,6 @@ function updateChart() {
 	});
 }
 
-//
-// WS Ping Charting
-//
-
-var ws;
-var reconnect = true;
-var t0 = 0;
-var pingTask;
-document.wstime = {};
-
-connect();
-
-function init() {
-
-	initCharting();
-
-	clearData();
-	updateInterval();
-}
-
 function getInterval() {
 
 	return document.getElementById("interval").value;
@@ -145,25 +142,25 @@ function connect() {
 	var host = window.location.host;
 	var uri = "ws://" + host + "/ping/";
 	ws = new WebSocket(uri);
-}
 
-ws.onopen = function() {
-	ping();
-}
-
-ws.onmessage = function(data) {
-	pong();
-};
-
-ws.onclose = function() {
-	if (reconnect) {
-		connect();
+	ws.onopen = function() {
+		ping();
 	}
-};
 
-ws.onerror = function(err) {
-	console.log("Error: " + err);
-};
+	ws.onmessage = function(data) {
+		pong();
+	};
+
+	ws.onclose = function() {
+		if (reconnect) {
+			connect();
+		}
+	};
+
+	ws.onerror = function(err) {
+		console.log("Error: " + err);
+	};
+}
 
 function ping() {
 	ws.send("ping");
@@ -203,7 +200,8 @@ function pong() {
 	for (var i = (numAvail - 1); i >= (numAvail - numSamples); i--) {
 		avg += document.chart.config.data.datasets[0].data[i].y;
 	}
-	avg /= numSamples;
+
+	avg = (avg / numSamples).toFixed(2);
 	document.wstime.avg = avg;
 
 	// push avg to data array
@@ -219,7 +217,6 @@ function pong() {
 	updateUI();
 }
 
-setInterval(updateTimescale, 10000);
 function updateTimescale() {
 
 	var duration = (Date.now() - document.wstime.start);
@@ -258,11 +255,14 @@ function clearData() {
 
 function exportData() {
 
-	// const jsonStr = JSON.stringify(document.chart.config.data.datasets);
+	var strExport = JSON.stringify({
+		ping : document.chart.config.data.datasets[0].data,
+		avg : document.chart.config.data.datasets[1].data
+	});
 
 	let element = document.createElement('a');
 	element.setAttribute('href', 'data:text/plain;charset=utf-8,'
-			+ encodeURIComponent(jsonStr));
+			+ encodeURIComponent(strExport));
 	element.setAttribute('download', "export.json");
 
 	element.style.display = 'none';
